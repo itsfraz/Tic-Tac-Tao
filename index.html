@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+  <title>Enhanced Tic Tac Toe</title>
+  </head>
+<body>
+  <h1>Tic Tac Toe</h1>
+  <div class="scoreboard">
+    <span>Player X: <span id="playerXScore">0</span></span>
+    <span>Draws: <span id="drawScore">0</span></span>
+    <span>Player O: <span id="playerOScore">0</span></span>
+  </div>
+  <div class="game-container" id="gameContainer">
+    <!-- Dynamically generated cells -->
+  </div>
+  <div class="status" id="status">Select your symbol to start!</div>
+  <button class="reset-btn" id="resetBtn">Reset Game</button>
+  <button class="dark-mode-btn" id="darkModeBtn">Toggle Dark Mode</button>
+
+  <audio id="moveSound" src="https://www.soundjay.com/button/beep-07.wav"></audio>
+  <audio id="winSound" src="https://www.soundjay.com/misc/success-02.mp3"></audio>
+  <audio id="drawSound" src="https://www.soundjay.com/misc/fail-01.mp3"></audio>
+
+    <script src="script.js"></script>
+  </body>
+</html>
