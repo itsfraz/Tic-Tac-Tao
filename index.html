@@ -5,9 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css">
   <title>Enhanced Tic Tac Toe</title>
-  </head>
+</head>
 <body>
   <h1>Tic Tac Toe</h1>
+  <div class="toggle-container">
+    <button class="dark-mode-btn" id="darkModeBtn">Dark Mode</button>
+  </div>
   <div class="scoreboard">
     <span>Player X: <span id="playerXScore">0</span></span>
     <span>Draws: <span id="drawScore">0</span></span>
@@ -18,12 +21,18 @@
   </div>
   <div class="status" id="status">Select your symbol to start!</div>
   <button class="reset-btn" id="resetBtn">Reset Game</button>
-  <button class="dark-mode-btn" id="darkModeBtn">Toggle Dark Mode</button>
 
+  <!-- Celebration container -->
+  <div id="celebration" class="celebration">
+    <div class="sparkles"></div>
+    <div class="congrats-message">Congratulations! You Win!</div>
+  </div>
+
+  <!-- Audio elements -->
   <audio id="moveSound" src="https://www.soundjay.com/button/beep-07.wav"></audio>
   <audio id="winSound" src="https://www.soundjay.com/misc/success-02.mp3"></audio>
   <audio id="drawSound" src="https://www.soundjay.com/misc/fail-01.mp3"></audio>
 
-    <script src="script.js"></script>
-  </body>
+  <script src="script.js"></script>
+</body>
 </html>
