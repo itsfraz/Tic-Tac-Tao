@@ -16,19 +16,22 @@
     <span>Draws: <span id="drawScore">0</span></span>
     <span>Player O: <span id="playerOScore">0</span></span>
   </div>
-  <div class="game-container" id="gameContainer">
-    <!-- Dynamically generated cells -->
+
+  <div id="modeSelection" style="text-align: center; margin-bottom: 20px;">
+    <button class="player-select-btn" id="vsPlayerBtn">Player vs Player</button>
+    <button class="player-select-btn" id="vsComputerBtn">Player vs Computer</button>
   </div>
-  <div class="status" id="status">Select your symbol to start!</div>
+
+  <div class="game-container" id="gameContainer">
+    </div>
+  <div class="status" id="status">Select a game mode to start!</div>
   <button class="reset-btn" id="resetBtn">Reset Game</button>
 
-  <!-- Celebration container -->
   <div id="celebration" class="celebration">
     <div class="sparkles"></div>
     <div class="congrats-message">Congratulations! You Win!</div>
   </div>
 
-  <!-- Audio elements -->
   <audio id="moveSound" src="https://www.soundjay.com/button/beep-07.wav"></audio>
   <audio id="winSound" src="https://www.soundjay.com/misc/success-02.mp3"></audio>
   <audio id="drawSound" src="https://www.soundjay.com/misc/fail-01.mp3"></audio>
