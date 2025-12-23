@@ -1,680 +1,788 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="style.css">
-  <title>Enhanced Tic Tac Toe</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="description" content="A modern, mobile-first Tic Tac Toe game with smart AI and beautiful aesthetics.">
+    <title>Tic Tac Toe Pro</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                fontFamily: {
+                    sans: ['Outfit', 'sans-serif'],
+                },
+                extend: {
+                    colors: {
+                        glass: 'rgba(255, 255, 255, 0.1)',
+                        glassDark: 'rgba(15, 23, 42, 0.6)',
+                        primary: {
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                        },
+                        accent: {
+                            x: '#f43f5e', // Rose-500
+                            o: '#3b82f6', // Blue-500
+                        }
+                    },
+                    animation: {
+                        'pop-in': 'popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+                        'fade-in': 'fadeIn 0.5s ease-out forwards',
+                        'u-slide-up': 'slideUp 0.4s ease-out forwards',
+                        'bounce-slight': 'bounceSlight 2s infinite',
+                        'pulse-glow': 'pulseGlow 2s infinite',
+                    },
+                    keyframes: {
+                        popIn: {
+                            '0%': { transform: 'scale(0.5)', opacity: '0' },
+                            '100%': { transform: 'scale(1)', opacity: '1' },
+                        },
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(20px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        },
+                        bounceSlight: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-5px)' },
+                        },
+                        pulseGlow: {
+                            '0%, 100%': { boxShadow: '0 0 15px rgba(99, 102, 241, 0.5)' },
+                            '50%': { boxShadow: '0 0 25px rgba(99, 102, 241, 0.8)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom tweaks that Tailwind can't handle purely via classes or for specific feel */
+        body {
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior-y: none; /* Prevent pull-to-refresh on mobile, allow scroll */
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .dark .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .perspective-card {
+            perspective: 1000px;
+        }
+        .cell-shadow {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .dark .cell-shadow {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.16);
+        }
+    </style>
 </head>
-<body>
-  <style>
-    /* General Reset */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+<body class="bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col overflow-y-auto transition-colors duration-500 ease-in-out">
 
-body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #77aff8;
-  color: #333;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  flex-direction: column;
-  padding: 20px;
-  transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-h1 {
-  margin-bottom: 20px;
-  text-align: center;
-  color: #444;
-}
-
-.game-container {
-  display: grid;
-  grid-template-columns: repeat(3, 100px);
-  grid-gap: 10px;
-  margin-bottom: 20px;
-}
-
-.cell {
-  width: 100px;
-  height: 100px;
-  background-color: #fff;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 2.5rem;
-  font-weight: 600;
-  cursor: pointer;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  user-select: none;
-}
-
-.cell:hover {
-  background-color: #f5f5f5;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  transform: scale(1.05);
-}
-
-.cell.X {
-  color: #e74c3c;
-}
-
-.cell.O {
-  color: #3498db;
-}
-
-.status {
-  margin-top: 15px;
-  font-size: 1.25rem;
-  text-align: center;
-  font-weight: 500;
-}
-
-.scoreboard {
-  margin-top: 10px;
-  font-size: 1.1rem;
-  display: flex;
-  gap: 25px;
-  justify-content: center;
-  margin-bottom: 20px;
-}
-
-.reset-btn,
-.dark-mode-btn,
-.player-select-btn {
-  margin-top: 15px;
-  padding: 12px 25px;
-  font-size: 1.1rem;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  font-weight: 500;
-}
-
-.reset-btn {
-  background-color: #2ecc71;
-  color: white;
-}
-
-.reset-btn:hover {
-  background-color: #27ae60;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
-  transform: translateY(-2px);
-}
-
-.dark-mode-btn {
-  background-color: #3498db;
-  color: white;
-}
-
-.dark-mode-btn:hover {
-  background-color: #2980b9;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
-  transform: translateY(-2px);
-}
-
-.player-select-btn {
-  background-color: #9b59b6;
-  color: white;
-}
-
-.player-select-btn:hover {
-  background-color: #8e44ad;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
-  transform: translateY(-2px);
-}
-
-/* Dark Mode */
-body.dark-mode {
-  background-color: #34495e;
-  color: #ecf0f1;
-}
-
-body.dark-mode .cell {
-  background-color: #2c3e50;
-  border-color: #34495e;
-  color: #fff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-}
-
-body.dark-mode .cell:hover {
-  background-color: #34495e;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
-  transform: scale(1.05);
-}
-
-body.dark-mode .reset-btn {
-  background-color: #27ae60;
-  color: #fff;
-}
-
-body.dark-mode .reset-btn:hover {
-  background-color: #2ecc71;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
-  transform: translateY(-2px);
-}
-
-body.dark-mode .dark-mode-btn {
-  background-color: #2980b9;
-  color: #fff;
-}
-
-body.dark-mode .dark-mode-btn:hover {
-  background-color: #3498db;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
-  transform: translateY(-2px);
-}
-
-body.dark-mode .player-select-btn {
-  background-color: #8e44ad;
-  color: #fff;
-}
-
-body.dark-mode .player-select-btn:hover {
-  background-color: #9b59b6;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
-  transform: translateY(-2px);
-}
-
-/* Celebration container */
-.celebration {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.8);
-  display: none;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  z-index: 1000;
-}
-
-.sparkles {
-  position: absolute;
-  width: 10px;
-  height: 10px;
-  background: radial-gradient(circle, #ffd700, transparent);
-  border-radius: 50%;
-  animation: sparkleMove 1s ease-out forwards;
-}
-@keyframes sparkleMove {
-  0% {
-    transform: translate(0, 0) scale(1);
-    opacity: 1;
-  }
-  100% {
-    transform: translate(var(--x), var(--y)) scale(0);
-    opacity: 0;
-  }
-}
-.sparkles::before,
-.sparkles::after {
-  content: "";
-  position: absolute;
-  width: 20px;
-  height: 20px;
-  background: radial-gradient(circle, #ffd700, transparent);
-  border-radius: 50%;
-  animation: sparkle 1.5s infinite ease-in-out;
-}
-
-.sparkles::before {
-  top: 0;
-  left: 0;
-  animation-delay: 0s;
-}
-
-.sparkles::after {
-  bottom: 0;
-  right: 0;
-  animation-delay: 0.75s;
-}
-
-@keyframes sparkle {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(1.5);
-    opacity: 0.5;
-  }
-}
-
-.congrats-message {
-  color: #ffd700;
-  font-size: 2rem;
-  font-weight: bold;
-  text-align: center;
-  margin-top: 20px;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .game-container {
-    grid-template-columns: repeat(3, 80px);
-    grid-gap: 8px;
-  }
-
-  .cell {
-    width: 80px;
-    height: 80px;
-    font-size: 2rem;
-  }
-
-  .scoreboard {
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .reset-btn,
-  .dark-mode-btn,
-  .player-select-btn {
-    font-size: 1rem;
-    padding: 10px 20px;
-  }
-}
-
-@media (max-width: 480px) {
-  h1 {
-    font-size: 2rem;
-  }
-
-  .scoreboard {
-    font-size: 0.9rem;
-  }
-
-  .status {
-    font-size: 1.1rem;
-  }
-
-  .reset-btn,
-  .dark-mode-btn,
-  .player-select-btn {
-    font-size: 0.9rem;
-    padding: 8px 16px;
-  }
-}
-  </style>
-  <h1>Tic Tac Toe</h1>
-  <div class="toggle-container">
-    <button class="dark-mode-btn" id="darkModeBtn">Dark Mode</button>
-  </div>
-  <div class="scoreboard">
-    <span>Player X: <span id="playerXScore">0</span></span>
-    <span>Draws: <span id="drawScore">0</span></span>
-    <span>Player O: <span id="playerOScore">0</span></span>
-  </div>
-
-  <div id="modeSelection" style="text-align: center; margin-bottom: 20px;">
-    <button class="player-select-btn" id="vsPlayerBtn">Player vs Player</button>
-    <button class="player-select-btn" id="vsComputerBtn">Player vs Computer</button>
-  </div>
-
-  <div class="game-container" id="gameContainer">
+    <!-- Celebration Overlay -->
+    <div id="celebrationOverlay" class="fixed inset-0 z-50 pointer-events-none hidden items-center justify-center flex-col">
+        <!-- Confetti Canvas -->
+        <canvas id="confettiCanvas" class="absolute inset-0 w-full h-full"></canvas>
+        <!-- Win Message -->
+        <div id="winCard" class="relative z-10 glass-panel p-8 rounded-3xl shadow-2xl transform scale-0 opacity-0 transition-all duration-500 text-center mx-4 max-w-sm">
+            <h2 id="winnerText" class="text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-violet-500 mb-2">You Win!</h2>
+            <p id="winnerSub" class="text-slate-600 dark:text-slate-300 text-lg mb-6">Great moves out there.</p>
+            <button id="newGameBtnOverlay" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-lg shadow-lg shadow-indigo-500/30 transition transform hover:scale-105 active:scale-95 pointer-events-auto">
+                Play Again
+            </button>
+        </div>
     </div>
-  <div class="status" id="status">Select a game mode to start!</div>
-  <button class="reset-btn" id="resetBtn">Reset Game</button>
 
-  <div id="celebration" class="celebration">
-    <div class="sparkles"></div>
-    <div class="congrats-message">Congratulations! You Win!</div>
-  </div>
+    <!-- Match History Modal -->
+    <div id="historyModal" class="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm hidden items-center justify-center transition-opacity opacity-0">
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl w-full max-w-md mx-4 shadow-2xl transform transition-all scale-95 opacity-0" id="historyContent">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold">Match History</h3>
+                <button id="closeHistory" class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            <div id="historyList" class="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                <!-- History items injected here -->
+                <p class="text-center text-slate-500 py-4">No games played yet.</p>
+            </div>
+            <div class="mt-6 flex justify-end">
+                <button id="clearHistory" class="text-red-500 font-medium hover:text-red-600 px-4 py-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition">Clear History</button>
+            </div>
+        </div>
+    </div>
 
-  <audio id="moveSound" src="https://www.soundjay.com/button/beep-07.wav"></audio>
-  <audio id="winSound" src="https://www.soundjay.com/misc/success-02.mp3"></audio>
-  <audio id="drawSound" src="https://www.soundjay.com/misc/fail-01.mp3"></audio>
+    <!-- Main Game Area -->
+    <main class="flex-1 flex flex-col items-center justify-center w-full max-w-md mx-auto p-4 relative z-10 space-y-3">
+        
+        <!-- Header -->
+        <header class="w-full flex justify-between items-center animate-fade-in">
+            <div class="flex items-center gap-2">
+                <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-indigo-500/30">#</div>
+                <h1 class="text-2xl font-bold tracking-tight">TicTacToe<span class="text-indigo-500">.</span></h1>
+            </div>
+            <button id="historyBtn" class="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm hover:shadow-md transition text-slate-600 dark:text-slate-300">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </button>
+        </header>
 
-  <script >
-    const gameContainer = document.getElementById("gameContainer");
-const statusDisplay = document.getElementById("status");
-const resetButton = document.getElementById("resetBtn");
-const darkModeButton = document.getElementById("darkModeBtn");
+        <!-- Scoreboard -->
+        <div class="w-full grid grid-cols-3 gap-3 animate-fade-in" style="animation-delay: 100ms;">
+            <div class="flex flex-col items-center p-3 rounded-2xl bg-white dark:bg-slate-800 shadow-sm border-b-4 border-rose-500 transition-transform active:scale-95">
+                <span class="text-xs font-bold text-rose-500 uppercase tracking-wider mb-1">Player (X)</span>
+                <span id="scoreX" class="text-3xl font-black">0</span>
+            </div>
+            <div class="flex flex-col items-center p-3 rounded-2xl bg-white dark:bg-slate-800 shadow-sm border-b-4 border-slate-300 dark:border-slate-600">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Draws</span>
+                <span id="scoreDraw" class="text-3xl font-black">0</span>
+            </div>
+            <div class="flex flex-col items-center p-3 rounded-2xl bg-white dark:bg-slate-800 shadow-sm border-b-4 border-blue-500 transition-transform active:scale-95">
+                <span class="text-xs font-bold text-blue-500 uppercase tracking-wider mb-1">CPU (O)</span>
+                <span id="scoreO" class="text-3xl font-black">0</span>
+            </div>
+        </div>
 
-// Mode selection buttons
-const modeSelectionContainer = document.getElementById("modeSelection");
-const vsPlayerBtn = document.getElementById("vsPlayerBtn");
-const vsComputerBtn = document.getElementById("vsComputerBtn");
+        <!-- Mode & Difficulty Selection -->
+        <div class="w-full flex flex-col gap-3 animate-fade-in" style="animation-delay: 200ms;">
+            <div class="w-full bg-slate-200 dark:bg-slate-700 p-1 rounded-xl flex relative">
+                <div id="modeIndicator" class="absolute left-1 top-1 h-[calc(100%-8px)] w-[calc(50%-4px)] bg-white dark:bg-slate-600 rounded-lg shadow-sm transition-all duration-300 ease-out"></div>
+                <button id="modePvP" class="flex-1 relative z-10 py-2.5 text-sm font-bold text-center rounded-lg transition-colors">vs Player</button>
+                <button id="modePvC" class="flex-1 relative z-10 py-2.5 text-sm font-bold text-center rounded-lg transition-colors text-slate-500 dark:text-slate-400">vs Computer</button>
+            </div>
+            
+            <!-- Difficulty Selector (Only visible in PvC) -->
+            <div id="difficultyContainer" class="w-full flex justify-center gap-2 overflow-hidden transition-all duration-300 max-h-12 opacity-0 h-0"> 
+               <!-- Populated via JS -->
+            </div>
+        </div>
 
-const moveSound = document.getElementById("moveSound");
-const winSound = document.getElementById("winSound");
-const drawSound = document.getElementById("drawSound");
+        <!-- Game Board -->
+        <div class="relative w-full aspect-square mx-auto animate-u-slide-up" style="animation-delay: 300ms; max-width: 45vh;">
+            <div class="absolute inset-0 grid grid-cols-3 gap-3 p-3 bg-white dark:bg-slate-800 rounded-3xl shadow-xl">
+                <!-- Cells generated here -->
+                <div class="cell bg-slate-100 dark:bg-slate-900 rounded-xl relative cursor-pointer active:scale-95 transition-all duration-200 flex items-center justify-center text-5xl font-black select-none" data-index="0"></div>
+                <div class="cell bg-slate-100 dark:bg-slate-900 rounded-xl relative cursor-pointer active:scale-95 transition-all duration-200 flex items-center justify-center text-5xl font-black select-none" data-index="1"></div>
+                <div class="cell bg-slate-100 dark:bg-slate-900 rounded-xl relative cursor-pointer active:scale-95 transition-all duration-200 flex items-center justify-center text-5xl font-black select-none" data-index="2"></div>
+                <div class="cell bg-slate-100 dark:bg-slate-900 rounded-xl relative cursor-pointer active:scale-95 transition-all duration-200 flex items-center justify-center text-5xl font-black select-none" data-index="3"></div>
+                <div class="cell bg-slate-100 dark:bg-slate-900 rounded-xl relative cursor-pointer active:scale-95 transition-all duration-200 flex items-center justify-center text-5xl font-black select-none" data-index="4"></div>
+                <div class="cell bg-slate-100 dark:bg-slate-900 rounded-xl relative cursor-pointer active:scale-95 transition-all duration-200 flex items-center justify-center text-5xl font-black select-none" data-index="5"></div>
+                <div class="cell bg-slate-100 dark:bg-slate-900 rounded-xl relative cursor-pointer active:scale-95 transition-all duration-200 flex items-center justify-center text-5xl font-black select-none" data-index="6"></div>
+                <div class="cell bg-slate-100 dark:bg-slate-900 rounded-xl relative cursor-pointer active:scale-95 transition-all duration-200 flex items-center justify-center text-5xl font-black select-none" data-index="7"></div>
+                <div class="cell bg-slate-100 dark:bg-slate-900 rounded-xl relative cursor-pointer active:scale-95 transition-all duration-200 flex items-center justify-center text-5xl font-black select-none" data-index="8"></div>
+            </div>
+            <!-- Strike Line Container -->
+            <svg id="strikeLine" class="absolute inset-0 pointer-events-none w-full h-full z-20 overflow-visible opacity-0 transition-opacity duration-300">
+                <line x1="0" y1="0" x2="0" y2="0" stroke="currentColor" stroke-width="12" stroke-linecap="round" class="text-indigo-500/80 dark:text-indigo-400/80 shadow-[0_0_15px_currentColor]" />
+            </svg>
+        </div>
 
-let currentPlayer = "";
-let gameState = ["", "", "", "", "", "", "", "", ""];
-let gameActive = false;
-let gameMode = ""; // 'pvp' or 'pvc'
-let computerPlayer = "O"; // Computer is always 'O'
+        <!-- Status & Turn -->
+        <div id="statusText" class="text-center font-medium text-lg text-slate-600 dark:text-slate-300 animate-pulse transition-all h-8">
+            Starting game...
+        </div>
 
-const winningConditions = [
-  [0, 1, 2],
-  [3, 4, 5],
-  [6, 7, 8],
-  [0, 3, 6],
-  [1, 4, 7],
-  [2, 5, 8],
-  [0, 4, 8],
-  [2, 4, 6],
-];
+    </main>
 
-let playerXScore = 0;
-let playerOScore = 0;
-let drawScore = 0;
+    <!-- Bottom Action Bar (Sticky) -->
+    <div class="sticky bottom-2 w-[95%] max-w-md mx-auto glass-panel rounded-2xl shadow-lg p-2 flex justify-between items-center z-30 animate-u-slide-up" style="animation-delay: 400ms;">
+        <button id="soundBtn" class="p-3 rounded-xl hover:bg-slate-200/50 dark:hover:bg-slate-700/50 text-slate-600 dark:text-slate-300 transition active:scale-90" aria-label="Toggle Sound">
+            <!-- Speaker Icon -->
+            <svg id="soundIconOn" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg>
+            <svg id="soundIconOff" class="h-6 w-6 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15zM17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" /></svg>
+        </button>
+        
+        <button id="resetBtn" class="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-xl font-bold shadow-lg shadow-indigo-500/30 transition transform active:scale-95">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+            <span>Reset</span>
+        </button>
 
-// Initialize the game board
-function createBoard() {
-  for (let i = 0; i < 9; i++) {
-    const cell = document.createElement("div");
-    cell.classList.add("cell");
-    cell.dataset.index = i;
-    cell.addEventListener("click", handleCellClick);
-    gameContainer.appendChild(cell);
-  }
-}
+        <button id="themeBtn" class="p-3 rounded-xl hover:bg-slate-200/50 dark:hover:bg-slate-700/50 text-slate-600 dark:text-slate-300 transition active:scale-90" aria-label="Toggle Theme">
+            <!-- Moon/Sun Icon -->
+            <svg id="moonIcon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+            <svg id="sunIcon" class="h-6 w-6 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+        </button>
+    </div>
 
-// Handle cell click events
-function handleCellClick(event) {
-  if (!gameActive || (gameMode === "pvc" && currentPlayer === computerPlayer)) {
-    return;
-  }
-  const clickedCell = event.target;
-  const clickedIndex = parseInt(clickedCell.dataset.index);
-  if (gameState[clickedIndex] !== "") {
-    return;
-  }
-  makeMove(clickedIndex, currentPlayer);
-  if (gameActive && gameMode === "pvc") {
-    gameContainer.style.pointerEvents = "none";
-    setTimeout(() => {
-      computerMove();
-      gameContainer.style.pointerEvents = "auto";
-    }, 700);
-  }
-}
+    <!-- Script Logic -->
+    <script>
+        // --- 🎵 Audio Controller (Synthesized) ---
+        const AudioController = {
+            ctx: null,
+            enabled: true,
+            
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            },
+            
+            playTone(freq, type, duration, vol=0.1) {
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + duration);
+            },
 
-// Helper function to check for a winner on a given board state
-function checkWinner(board, player) {
-  for (const condition of winningConditions) {
-    const [a, b, c] = condition;
-    if (board[a] === player && board[b] === player && board[c] === player) {
-      return true;
-    }
-  }
-  return false;
-}
+            playMove() { this.playTone(400, 'sine', 0.1); }, // 'Blip'
+            playWin() { 
+                // Victory Arpeggio
+                if(!this.enabled) return;
+                const now = this.ctx.currentTime;
+                [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+                    setTimeout(() => this.playTone(freq, 'triangle', 0.2, 0.15), i * 100);
+                });
+            },
+            playDraw() { this.playTone(200, 'sawtooth', 0.3); }, // 'Womp'
+            playClick() { this.playTone(800, 'sine', 0.05, 0.05); } // UI Click
+        };
 
-// Smarter computer move logic
-function computerMove() {
-  if (!gameActive) return;
-  const humanPlayer = computerPlayer === "X" ? "O" : "X";
-  for (let i = 0; i < 9; i++) {
-    if (gameState[i] === "") {
-      const nextState = [...gameState];
-      nextState[i] = computerPlayer;
-      if (checkWinner(nextState, computerPlayer)) {
-        makeMove(i, computerPlayer);
-        return;
-      }
-    }
-  }
-  for (let i = 0; i < 9; i++) {
-    if (gameState[i] === "") {
-      const nextState = [...gameState];
-      nextState[i] = humanPlayer;
-      if (checkWinner(nextState, humanPlayer)) {
-        makeMove(i, computerPlayer);
-        return;
-      }
-    }
-  }
-  if (gameState[4] === "") {
-    makeMove(4, computerPlayer);
-    return;
-  }
-  const corners = [0, 2, 6, 8];
-  const availableCorners = corners.filter((i) => gameState[i] === "");
-  if (availableCorners.length > 0) {
-    const move =
-      availableCorners[Math.floor(Math.random() * availableCorners.length)];
-    makeMove(move, computerPlayer);
-    return;
-  }
-  const sides = [1, 3, 5, 7];
-  const availableSides = sides.filter((i) => gameState[i] === "");
-  if (availableSides.length > 0) {
-    const move =
-      availableSides[Math.floor(Math.random() * availableSides.length)];
-    makeMove(move, computerPlayer);
-    return;
-  }
-}
+        // Initialize Audio on first user interaction
+        document.body.addEventListener('click', () => {
+            AudioController.init();
+            if (AudioController.ctx && AudioController.ctx.state === 'suspended') {
+                AudioController.ctx.resume();
+            }
+        }, { once: true });
 
-// Generalized function to make a move
-function makeMove(index, player) {
-  if (!gameActive || gameState[index] !== "") return;
-  gameState[index] = player;
-  const cell = document.querySelector(`.cell[data-index="${index}"]`);
-  cell.classList.add(player);
-  cell.textContent = player;
-  cell.style.transform = "scale(1.1)";
-  if (moveSound) {
-    moveSound
-      .play()
-      .catch((error) => console.error("Sound playback failed:", error));
-  }
-  setTimeout(() => {
-    cell.style.transform = "scale(1)";
-  }, 200);
-  checkResult();
-}
 
-// **UPDATED**: Check for win or draw with new PvP message
-function checkResult() {
-  let roundWon = false;
-  let winningCondition = null;
-  for (let condition of winningConditions) {
-    const [a, b, c] = condition;
-    if (
-      gameState[a] &&
-      gameState[a] === gameState[b] &&
-      gameState[a] === gameState[c]
-    ) {
-      roundWon = true;
-      winningCondition = condition;
-      break;
-    }
-  }
+        // --- 🧠 Game State & Logic ---
+        const Game = {
+            board: Array(9).fill(""),
+            active: false,
+            mode: 'pvc', // 'pvp' or 'pvc'
+            difficulty: 'hard', // 'easy', 'medium', 'hard'
+            currentPlayer: 'X',
+            scores: { X: 0, O: 0, Draw: 0 },
+            history: JSON.parse(localStorage.getItem('tictactoe_history')) || [],
+            
+            winningConditions: [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+                [0, 3, 6], [1, 4, 7], [2, 5, 8], // Cols
+                [0, 4, 8], [2, 4, 6]             // Diagonals
+            ],
 
-  if (roundWon) {
-    highlightWinningCells(winningCondition);
-    const winner = currentPlayer;
-    let winMessage = "";
+            init() {
+                this.loadSettings();
+                UI.updateScoreboard();
+                this.renderHistory();
+                this.startNewGame();
+                UI.setupEventListeners();
+                UI.updateModeUI();
+            },
 
-    // **UPDATED MESSAGE LOGIC**
+            loadSettings() {
+                const dark = localStorage.getItem('theme') === 'dark' || 
+                             (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                if (dark) document.documentElement.classList.add('dark');
+                
+                // Load scores? Optional. Let's keep session scores for now as per original.
+                // Actually user requested match history, so session scores are fine to reset on reload, but we have history.
+            },
 
-    if (gameMode === "pvp") {
-      // The 'winner' variable already holds "X" or "O"
-      winMessage = `Congratulations Player ${winner}, You Win!`;
-    } else if (gameMode === "pvc" && winner === computerPlayer) {
-      winMessage = "congratulation Computer wins";
-    }
+            startNewGame() {
+                this.board = Array(9).fill("");
+                this.active = true;
+                this.currentPlayer = 'X';
+                UI.clearBoard();
+                UI.updateStatus(`Player ${this.currentPlayer}'s Turn`);
+                UI.hideCelebration();
+                
+                // If PvC and Computer is X (optional feature, but currently computer is always O)
+                if (this.mode === 'pvc' && this.currentPlayer === 'O') {
+                    setTimeout(() => AI.makeMove(), 500);
+                }
+            },
 
-    statusDisplay.textContent = winMessage;
-    updateScore(winner);
-    if (winSound)
-      winSound.play().catch((e) => console.error("Win sound failed", e));
-    showCelebration(winner);
-    gameActive = false;
-    return;
-  }
+            handleClick(index) {
+                if (!this.active || this.board[index] !== "") return;
+                
+                // Human Move
+                this.makeMove(index, this.currentPlayer);
+                AudioController.playMove();
 
-  if (!gameState.includes("")) {
-    statusDisplay.textContent = "It's a draw!";
-    if (drawSound)
-      drawSound.play().catch((e) => console.error("Draw sound failed", e));
-    updateScore("draw");
-    gameActive = false;
-    return;
-  }
+                if (this.checkWin(this.currentPlayer)) {
+                    this.handleWin(this.currentPlayer);
+                } else if (!this.board.includes("")) {
+                    this.handleDraw();
+                } else {
+                    this.currentPlayer = this.currentPlayer === 'X' ? 'O' : 'X';
+                    UI.updateStatus(this.mode === 'pvc' && this.currentPlayer === 'O' ? "Computer Thinking..." : `Player ${this.currentPlayer}'s Turn`);
+                    
+                    // AI Turn
+                    if (this.mode === 'pvc' && this.currentPlayer === 'O' && this.active) {
+                        UI.disableBoard();
+                        setTimeout(() => {
+                            AI.makeMove();
+                            UI.enableBoard();
+                        }, 600);
+                    }
+                }
+            },
 
-  currentPlayer = currentPlayer === "X" ? "O" : "X";
-  const nextPlayerText =
-    gameMode === "pvc" && currentPlayer === computerPlayer
-      ? "Computer"
-      : `Player ${currentPlayer}`;
-  statusDisplay.textContent = `${nextPlayerText}'s turn`;
-}
+            makeMove(index, player) {
+                this.board[index] = player;
+                UI.updateCell(index, player);
+            },
 
-// Highlight winning cells
-function highlightWinningCells(condition) {
-  condition.forEach((index) => {
-    const cell = document.querySelector(`.cell[data-index="${index}"]`);
-    cell.style.backgroundColor = "#f1c40f";
-    cell.style.color = "#fff";
-  });
-}
+            checkWin(player) {
+                return this.winningConditions.some(combination => {
+                    return combination.every(index => this.board[index] === player);
+                });
+            },
 
-// Update scoreboard
-function updateScore(result) {
-  if (result === "X") playerXScore++;
-  else if (result === "O") playerOScore++;
-  else if (result === "draw") drawScore++;
-  document.getElementById("playerXScore").textContent = playerXScore;
-  document.getElementById("playerOScore").textContent = playerOScore;
-  document.getElementById("drawScore").textContent = drawScore;
-}
+            getWinningCombination() {
+                 return this.winningConditions.find(combination => {
+                    const [a, b, c] = combination;
+                    return this.board[a] && this.board[a] === this.board[b] && this.board[a] === this.board[c];
+                });
+            },
 
-// **UPDATED**: Show celebration animation with new PvP message
-function showCelebration(winner) {
-  const celebration = document.getElementById("celebration");
-  const congratsMessage = celebration.querySelector(".congrats-message");
+            handleWin(winner) {
+                this.active = false;
+                this.scores[winner]++;
+                this.saveToHistory(winner);
+                UI.updateScoreboard();
+                UI.highlightWin(this.getWinningCombination());
+                AudioController.playWin();
+                
+                const winMsg = this.mode === 'pvc' && winner === 'O' ? 'Computer Wins!' : 
+                               (this.mode === 'pvp' ? `Player ${winner} Wins!` : 'You Win!');
+                
+                setTimeout(() => UI.showCelebration(winMsg, winner), 800);
+            },
 
- 
-  // **UPDATED MESSAGE LOGIC**
-  if (gameMode === "pvp") {
-    // The 'winner' variable already holds "X" or "O"
-    congratsMessage.textContent = `Congratulations Player ${winner},Win!`;
-  } else if (gameMode === "pvc" && winner === computerPlayer) {
-    congratsMessage.textContent = "congratulation Computer wins";
-  } else {
-    congratsMessage.textContent = "Congratulations! You Win!";
-  }
+            handleDraw() {
+                this.active = false;
+                this.scores.Draw++;
+                this.saveToHistory('Draw');
+                UI.updateScoreboard();
+                AudioController.playDraw();
+                UI.statusText.textContent = "It's a Draw!";
+                setTimeout(() => UI.showCelebration("It's a Draw!", 'Draw'), 800);
+            },
 
-  celebration.style.display = "flex";
+            saveToHistory(result) {
+                const entry = {
+                    date: new Date().toLocaleString(),
+                    mode: this.mode === 'pvc' ? `PvC (${this.difficulty})` : 'PvP',
+                    result: result === 'Draw' ? 'Draw' : `${result} Won`
+                };
+                this.history.unshift(entry);
+                if (this.history.length > 50) this.history.pop();
+                localStorage.setItem('tictactoe_history', JSON.stringify(this.history));
+                this.renderHistory();
+            },
 
-  for (let i = 0; i < 50; i++) {
-    createSparkle();
-  }
+            renderHistory() {
+                const list = document.getElementById('historyList');
+                list.innerHTML = this.history.length ? '' : '<p class="text-center text-slate-500 py-4">No games played yet.</p>';
+                this.history.forEach(h => {
+                    const item = document.createElement('div');
+                    item.className = 'flex justify-between items-center bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg text-sm';
+                    const color = h.result.includes('X') ? 'text-rose-500' : (h.result.includes('O') ? 'text-blue-500' : 'text-slate-500');
+                    item.innerHTML = `
+                        <div class="flex flex-col">
+                            <span class="font-bold text-slate-700 dark:text-slate-200">${h.mode}</span>
+                            <span class="text-xs text-slate-400">${h.date}</span>
+                        </div>
+                        <span class="font-bold ${color}">${h.result}</span>
+                    `;
+                    list.appendChild(item);
+                });
+            }
+        };
 
-  setTimeout(() => {
-    celebration.style.display = "none";
-  }, 5000);
-}
+        // --- 🤖 AI Logic (The Brain) ---
+        const AI = {
+            makeMove() {
+                let index;
+                if (Game.difficulty === 'easy') {
+                    index = this.getRandomMove();
+                } else if (Game.difficulty === 'medium') {
+                    index = this.getBlockOrRandom();
+                } else {
+                    index = this.getBestMove(); // Hard - Minimax-ish logic
+                }
+                
+                if (index !== undefined) {
+                    Game.handleClick(index);
+                }
+            },
 
-// Create a single sparkle
-function createSparkle() {
-  const sparkle = document.createElement("div");
-  sparkle.classList.add("sparkle");
-  const x = (Math.random() - 0.5) * 500;
-  const y = (Math.random() - 0.5) * 500;
-  sparkle.style.setProperty("--x", `${x}px`);
-  sparkle.style.setProperty("--y", `${y}px`);
-  sparkle.style.animationDelay = `${Math.random() * 0.5}s`;
-  document.getElementById("celebration").appendChild(sparkle);
-  setTimeout(() => {
-    sparkle.remove();
-  }, 1000);
-}
+            getRandomMove() {
+                const available = Game.board.map((v, i) => v === "" ? i : null).filter(v => v !== null);
+                if (available.length === 0) return;
+                return available[Math.floor(Math.random() * available.length)];
+            },
+            
+            getBlockOrRandom() {
+                // Try to win first (always good)
+                let winMove = this.findWinningMove('O');
+                if (winMove !== -1) return winMove;
+                
+                // Try to block info
+                let blockMove = this.findWinningMove('X');
+                if (blockMove !== -1) return blockMove;
 
-// Reset the game
-function resetGame() {
-  gameState = ["", "", "", "", "", "", "", "", ""];
-  gameActive = false;
-  currentPlayer = "";
-  gameMode = "";
-  document.querySelectorAll(".cell").forEach((cell) => {
-    cell.textContent = "";
-    cell.classList.remove("X", "O");
-    cell.style.backgroundColor = "";
-    cell.style.color = "";
-    cell.style.transform = "scale(1)";
-  });
-  statusDisplay.textContent = "Select a game mode to start!";
-  modeSelectionContainer.style.display = "block";
-  playerSelection.style.display = "none";
-}
+                return this.getRandomMove();
+            },
 
-// Toggle dark mode
-function toggleDarkMode() {
-  document.body.classList.toggle("dark-mode");
-  const isDarkMode = document.body.classList.contains("dark-mode");
-  darkModeButton.textContent = isDarkMode ? "Light Mode" : "Dark Mode";
-}
+            getBestMove() {
+                // 1. Win if possible
+                let winMove = this.findWinningMove('O');
+                if (winMove !== -1) return winMove;
 
-// Updated game start flow
-function selectMode(mode) {
-  gameMode = mode;
-  modeSelectionContainer.style.display = "none";
-  if (mode === "pvc") {
-    startGame("X");
-  } else {
-    playerSelection.style.display = "block";
-    statusDisplay.textContent = "Select your symbol to start!";
-  }
-}
+                // 2. Block player win
+                let blockMove = this.findWinningMove('X');
+                if (blockMove !== -1) return blockMove;
 
-// Start the game
-function startGame(player) {
-  currentPlayer = player;
-  gameActive = true;
-  statusDisplay.textContent = `Player ${currentPlayer}'s turn`;
-  playerSelection.style.display = "none";
-}
+                // 3. Take center
+                if (Game.board[4] === "") return 4;
 
-// Event listeners
-resetButton.addEventListener("click", resetGame);
-darkModeButton.addEventListener("click", toggleDarkMode);
-vsPlayerBtn.addEventListener("click", () => selectMode("pvp"));
-vsComputerBtn.addEventListener("click", () => selectMode("pvc"));
+                // 4. Take corners
+                const corners = [0, 2, 6, 8].filter(i => Game.board[i] === "");
+                if (corners.length > 0) return corners[Math.floor(Math.random() * corners.length)];
 
-// Player selection buttons
-const playerSelection = document.createElement("div");
-playerSelection.innerHTML = `
-      <button class="player-select-btn" data-player="X">Play as X</button>
-      <button class="player-select-btn" data-player="O">Play as O</button>
-    `;
-playerSelection.style.marginBottom = "20px";
-playerSelection.style.display = "none";
-playerSelection.style.textAlign = "center";
-document.body.insertBefore(playerSelection, gameContainer);
-// This is the corrected line
-playerSelection.querySelectorAll(".player-select-btn").forEach((button) => {
-  button.addEventListener("click", (event) => {
-    if (gameMode === "pvp") {
-      startGame(event.target.dataset.player);
-    }
-  });
-});
+                // 5. Random sides
+                return this.getRandomMove();
+            },
 
-// Initialize the game
-createBoard();
+            findWinningMove(player) {
+                for (let condition of Game.winningConditions) {
+                    const [a, b, c] = condition;
+                    const vals = [Game.board[a], Game.board[b], Game.board[c]];
+                    const emptyCount = vals.filter(v => v === "").length;
+                    const playerCount = vals.filter(v => v === player).length;
+                    
+                    if (emptyCount === 1 && playerCount === 2) {
+                        if (Game.board[a] === "") return a;
+                        if (Game.board[b] === "") return b;
+                        if (Game.board[c] === "") return c;
+                    }
+                }
+                return -1;
+            }
+        };
 
-  </script>
+        // --- 🎨 UI Controller ---
+        const UI = {
+            cells: document.querySelectorAll('.cell'),
+            statusText: document.getElementById('statusText'),
+            scoreX: document.getElementById('scoreX'),
+            scoreO: document.getElementById('scoreO'),
+            scoreDraw: document.getElementById('scoreDraw'),
+
+            setupEventListeners() {
+                // Cell Clicks
+                this.cells.forEach(cell => {
+                    cell.addEventListener('click', (e) => {
+                        const index = parseInt(e.target.dataset.index);
+                        Game.handleClick(index);
+                    });
+                });
+
+                // Mode Switching
+                document.getElementById('modePvP').addEventListener('click', () => this.setMode('pvp'));
+                document.getElementById('modePvC').addEventListener('click', () => this.setMode('pvc'));
+
+                // Theme Toggle
+                document.getElementById('themeBtn').addEventListener('click', this.toggleTheme);
+                
+                // Sound Toggle
+                document.getElementById('soundBtn').addEventListener('click', this.toggleSound);
+
+                // Reset
+                document.getElementById('resetBtn').addEventListener('click', () => {
+                   AudioController.playClick();
+                   Game.startNewGame();
+                });
+                document.getElementById('newGameBtnOverlay').addEventListener('click', () => {
+                    document.getElementById('celebrationOverlay').classList.add('hidden');
+                    document.getElementById('celebrationOverlay').classList.remove('flex');
+                    document.getElementById('winCard').classList.remove('scale-100', 'opacity-100');
+                    document.getElementById('winCard').classList.add('scale-0', 'opacity-0');
+                    Game.startNewGame();
+                });
+
+                // History
+                document.getElementById('historyBtn').addEventListener('click', () => {
+                   document.getElementById('historyModal').classList.remove('hidden');
+                   document.getElementById('historyModal').classList.add('flex');
+                   // Slight delay for animation
+                   setTimeout(() => {
+                       document.getElementById('historyModal').classList.remove('opacity-0');
+                       document.getElementById('historyContent').classList.remove('scale-95', 'opacity-0');
+                       document.getElementById('historyContent').classList.add('scale-100', 'opacity-100');
+                   }, 10);
+                });
+                
+                document.getElementById('closeHistory').addEventListener('click', this.closeHistory);
+                document.getElementById('historyModal').addEventListener('click', (e) => {
+                    if(e.target.id === 'historyModal') this.closeHistory();
+                });
+
+                document.getElementById('clearHistory').addEventListener('click', () => {
+                    Game.history = [];
+                    localStorage.removeItem('tictactoe_history');
+                    Game.renderHistory();
+                });
+                
+                // Create Difficulty buttons dynamically
+                const diffContainer = document.getElementById('difficultyContainer');
+                ['easy', 'medium', 'hard'].forEach(level => {
+                    const btn = document.createElement('button');
+                    btn.textContent = level.charAt(0).toUpperCase() + level.slice(1);
+                    btn.className = `flex-1 py-1 text-xs rounded-md border border-slate-300 dark:border-slate-600 font-medium transition-colors ${Game.difficulty === level ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300' : 'text-slate-500'}`;
+                    btn.addEventListener('click', () => {
+                        Game.difficulty = level;
+                        // update styles
+                        Array.from(diffContainer.children).forEach(b => {
+                           b.className = b.className.replace('bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300', 'text-slate-500');
+                        });
+                        btn.className = btn.className.replace('text-slate-500', 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300');
+                    });
+                    diffContainer.appendChild(btn);
+                });
+            },
+
+            closeHistory() {
+                document.getElementById('historyModal').classList.add('opacity-0');
+                document.getElementById('historyContent').classList.remove('scale-100', 'opacity-100');
+                document.getElementById('historyContent').classList.add('scale-95', 'opacity-0');
+                setTimeout(() => {
+                    document.getElementById('historyModal').classList.remove('flex');
+                    document.getElementById('historyModal').classList.add('hidden');
+                }, 300);
+            },
+
+            setMode(mode) {
+                Game.mode = mode; 
+                this.updateModeUI(); 
+                Game.startNewGame();
+            },
+
+            updateModeUI() {
+                const indicator = document.getElementById('modeIndicator');
+                const tvPlayer = document.getElementById('modePvP');
+                const tvComputer = document.getElementById('modePvC');
+                const diffContainer = document.getElementById('difficultyContainer');
+                
+                if (Game.mode === 'pvp') {
+                    indicator.style.transform = 'translateX(0)';
+                    tvPlayer.classList.remove('text-slate-500', 'dark:text-slate-400');
+                    tvComputer.classList.add('text-slate-500', 'dark:text-slate-400');
+                    diffContainer.classList.add('opacity-0', 'h-0');
+                    diffContainer.classList.remove('h-12', 'opacity-100');
+                } else {
+                    indicator.style.transform = 'translateX(100%)';
+                    tvComputer.classList.remove('text-slate-500', 'dark:text-slate-400');
+                    tvPlayer.classList.add('text-slate-500', 'dark:text-slate-400');
+                    diffContainer.classList.remove('opacity-0', 'h-0');
+                    diffContainer.classList.add('h-12', 'opacity-100');
+                }
+            },
+
+            updateCell(index, player) {
+                const cell = this.cells[index];
+                cell.textContent = player;
+                cell.className = `cell rounded-xl relative cursor-pointer active:scale-95 transition-all duration-200 flex items-center justify-center text-5xl font-black select-none animate-pop-in cell-shadow
+                    ${player === 'X' ? 'bg-rose-50 text-rose-500 dark:bg-slate-800' : 'bg-blue-50 text-blue-500 dark:bg-slate-800'}`;
+            },
+
+            clearBoard() {
+                this.cells.forEach((cell, i) => {
+                    cell.textContent = "";
+                    cell.className = "cell bg-slate-100 dark:bg-slate-900 rounded-xl relative cursor-pointer active:scale-95 transition-all duration-200 flex items-center justify-center text-5xl font-black select-none hover:bg-slate-200 dark:hover:bg-slate-800";
+                    cell.dataset.index = i;
+                    cell.style.removeProperty('animation');
+                });
+                // Reset strike line
+                const line = document.getElementById('strikeLine');
+                line.classList.remove('opacity-100');
+                line.classList.add('opacity-0');
+            },
+
+            updateStatus(msg) {
+                this.statusText.textContent = msg;
+            },
+
+            updateScoreboard() {
+                this.scoreX.textContent = Game.scores.X;
+                this.scoreO.textContent = Game.scores.O;
+                this.scoreDraw.textContent = Game.scores.Draw;
+            },
+
+            disableBoard() {
+                document.querySelector('.grid').style.pointerEvents = 'none';
+            },
+
+            enableBoard() {
+                document.querySelector('.grid').style.pointerEvents = 'auto';
+            },
+
+            highlightWin(condition) {
+                // Animate valid line
+                const [a, b, c] = condition;
+                
+                // Highlight cells
+                [a, b, c].forEach(idx => {
+                    const cell = this.cells[idx];
+                    cell.classList.add('animate-pulse-glow', 'z-10');
+                    cell.classList.remove('bg-rose-50', 'bg-blue-50', 'dark:bg-slate-800');
+                    cell.classList.add(Game.board[a] === 'X' ? 'bg-rose-500' : 'bg-blue-500');
+                    cell.classList.add('text-white');
+                });
+
+                // Draw SVG line (Simplified logic: we know row/col/diag structure)
+                // 012 (row 1), 345 (row 2), 678 (row 3)
+                // 036 (col 1), 147 (col 2), 258 (col 3)
+                // 048 (diag 1), 246 (diag 2)
+                const line = document.getElementById('strikeLine').querySelector('line');
+                const svg = document.getElementById('strikeLine');
+                
+                // Coordinate map based on 3x3 grid percentages
+                const getCoord = (i) => {
+                    const row = Math.floor(i / 3);
+                    const col = i % 3;
+                    return { x: (col * 33.33) + 16.66, y: (row * 33.33) + 16.66 };
+                };
+                
+                const start = getCoord(a);
+                const end = getCoord(c);
+
+                line.setAttribute('x1', `${start.x}%`);
+                line.setAttribute('y1', `${start.y}%`);
+                line.setAttribute('x2', `${end.x}%`);
+                line.setAttribute('y2', `${end.y}%`);
+                
+                svg.classList.remove('opacity-0');
+                svg.classList.add('opacity-100');
+            },
+
+            showCelebration(text, winner) {
+                const overlay = document.getElementById('celebrationOverlay');
+                const winCard = document.getElementById('winCard');
+                const winnerText = document.getElementById('winnerText');
+                const winnerSub = document.getElementById('winnerSub');
+
+                winnerText.textContent = text;
+                
+                if (winner === 'Draw') {
+                    winnerText.className = "text-4xl font-extrabold mb-2 text-slate-500";
+                    winnerSub.textContent = "Tight match!";
+                } else {
+                    winnerText.className = `text-4xl font-extrabold bg-clip-text text-transparent mb-2 ${winner === 'X' ? 'bg-gradient-to-r from-rose-500 to-orange-500' : 'bg-gradient-to-r from-blue-500 to-cyan-500'}`;
+                    winnerSub.textContent = winner === Game.currentPlayer ? "Great moves!" : "Nice try!"; // logic reuse
+                }
+
+                overlay.classList.remove('hidden');
+                overlay.classList.add('flex');
+                
+                // Allow confetti render first
+                setTimeout(() => {
+                    winCard.classList.remove('scale-0', 'opacity-0');
+                    winCard.classList.add('scale-100', 'opacity-100');
+                    startConfetti();
+                }, 100);
+            },
+            
+            toggleTheme() {
+                document.documentElement.classList.toggle('dark');
+                const isDark = document.documentElement.classList.contains('dark');
+                localStorage.setItem('theme', isDark ? 'dark' : 'light');
+                
+                document.getElementById('moonIcon').classList.toggle('hidden', isDark);
+                document.getElementById('sunIcon').classList.toggle('hidden', !isDark);
+            },
+            
+            toggleSound() {
+                AudioController.enabled = !AudioController.enabled;
+                document.getElementById('soundIconOn').classList.toggle('hidden', !AudioController.enabled);
+                document.getElementById('soundIconOff').classList.toggle('hidden', AudioController.enabled);
+                AudioController.playClick();
+            },
+
+            hideCelebration() { /* Handled in setup listeners */ }
+        };
+
+        // --- 🎉 Confetti Logic ---
+        function startConfetti() {
+            const canvas = document.getElementById("confettiCanvas");
+            const ctx = canvas.getContext("2d");
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            const particles = [];
+            const colors = ['#f43f5e', '#3b82f6', '#8b5cf6', '#10b981', '#f59e0b'];
+            
+            for(let i=0; i<150; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height - canvas.height,
+                    vx: Math.random() * 4 - 2,
+                    vy: Math.random() * 5 + 2,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    size: Math.random() * 8 + 4,
+                    rotation: Math.random() * 360
+                });
+            }
+
+            function animate() {
+                if(document.getElementById('celebrationOverlay').classList.contains('hidden')) return;
+                
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach((p, index) => {
+                    p.y += p.vy;
+                    p.x += p.vx;
+                    p.rotation += 2;
+                    
+                    if(p.y > canvas.height) p.y = -10;
+                    
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.rotation * Math.PI / 180);
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
+                    ctx.restore();
+                });
+                requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        // Boot
+        Game.init();
+
+    </script>
 </body>
 </html>
